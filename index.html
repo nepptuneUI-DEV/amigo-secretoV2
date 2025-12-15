@@ -26,17 +26,22 @@
     }
     h1 { font-size: 24px; margin-bottom: 10px; }
     p { font-size: 14px; color: #9ca3af; }
-    button {
-      margin-top: 20px;
+    select, button {
+      margin-top: 15px;
       padding: 12px;
       width: 100%;
-      border: none;
       border-radius: 8px;
-      background: #22c55e;
+      border: none;
       font-size: 16px;
+    }
+    button {
+      background: #22c55e;
       cursor: pointer;
     }
-    button:disabled { background: #4b5563; cursor: not-allowed; }
+    button:disabled {
+      background: #4b5563;
+      cursor: not-allowed;
+    }
     .result { margin-top: 20px; font-size: 22px; font-weight: bold; color: #22c55e; }
     .warning { margin-top: 15px; font-size: 13px; color: #fbbf24; }
   </style>
@@ -44,8 +49,14 @@
 <body>
   <div class="card">
     <h1>🎄 Amigo Secreto</h1>
-    <p>Clique apenas uma vez para sortear.</p>
-    <button id="sortearBtn">Sortear nome</button>
+    <p>Selecione seu nome antes de sortear</p>
+
+    <select id="participante">
+      <option value="">Quem é você?</option>
+    </select>
+
+    <button id="sortearBtn" disabled>Sortear nome</button>
+
     <div class="result" id="resultado"></div>
     <div class="warning" id="aviso"></div>
   </div>
@@ -54,23 +65,39 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
+  const firebaseConfig = {
       apiKey: "AIzaSyB5rIwVGtYotzXWO0IcXtnzqR0wSw7SZ14",
       authDomain: "amigo-secretov2.firebaseapp.com",
       projectId: "amigo-secretov2",
     };
-
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    const select = document.getElementById("participante");
     const botao = document.getElementById("sortearBtn");
     const resultado = document.getElementById("resultado");
     const aviso = document.getElementById("aviso");
 
     const docRef = doc(db, "amigoSecreto", "lista");
 
+    const snapInicial = await getDoc(docRef);
+    if (snapInicial.exists()) {
+      const nomes = snapInicial.data().disponiveis;
+      nomes.forEach(nome => {
+        const opt = document.createElement("option");
+        opt.value = nome;
+        opt.textContent = nome;
+        select.appendChild(opt);
+      });
+    }
+
+    select.addEventListener("change", () => {
+      botao.disabled = !select.value;
+    });
+
     botao.addEventListener("click", async () => {
       botao.disabled = true;
+      const participante = select.value;
 
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
@@ -78,20 +105,18 @@
         return;
       }
 
-      const dados = snap.data();
-      const nomes = dados.disponiveis;
+      let nomes = snap.data().disponiveis.filter(n => n !== participante);
 
       if (nomes.length === 0) {
-        aviso.innerText = "Todos os nomes já foram sorteados.";
+        aviso.innerText = "Não há nomes disponíveis para sorteio.";
         return;
       }
 
       const indice = Math.floor(Math.random() * nomes.length);
       const nomeSorteado = nomes[indice];
 
-      nomes.splice(indice, 1);
-
-      await updateDoc(docRef, { disponiveis: nomes });
+      const nomesAtualizados = snap.data().disponiveis.filter(n => n !== nomeSorteado);
+      await updateDoc(docRef, { disponiveis: nomesAtualizados });
 
       resultado.innerText = nomeSorteado;
       aviso.innerText = "Nome registrado com sucesso.";
