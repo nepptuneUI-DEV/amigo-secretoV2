@@ -49,7 +49,7 @@
 <body>
   <div class="card">
     <h1>🎄 Amigo Secreto</h1>
-    <p>Selecione seu nome antes de sortear</p>
+    <p>Selecione quem é você</p>
 
     <select id="participante">
       <option value="">Quem é você?</option>
@@ -65,11 +65,12 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-      apiKey: "AIzaSyB5rIwVGtYotzXWO0IcXtnzqR0wSw7SZ14",
-      authDomain: "amigo-secretov2.firebaseapp.com",
-      projectId: "amigo-secretov2",
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_PROJETO.firebaseapp.com",
+      projectId: "SEU_PROJETO"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
@@ -78,18 +79,34 @@
     const resultado = document.getElementById("resultado");
     const aviso = document.getElementById("aviso");
 
-    const docRef = doc(db, "amigoSecreto", "lista");
+    const docRef = doc(db, "amigoSecreto", "lista", "participantes");
 
-    const snapInicial = await getDoc(docRef);
-    if (snapInicial.exists()) {
-      const nomes = snapInicial.data().disponiveis;
-      nomes.forEach(nome => {
-        const opt = document.createElement("option");
-        opt.value = nome;
-        opt.textContent = nome;
-        select.appendChild(opt);
-      });
-    }
+    // CARREGA TODOS OS PARTICIPANTES (não muda)
+    (async () => {
+      try {
+        const snap = await getDoc(docRef);
+        if (!snap.exists()) {
+          aviso.innerText = "Lista não encontrada.";
+          return;
+        }
+
+        const participantes = snap.data().participantes || [];
+        if (participantes.length === 0) {
+          aviso.innerText = "Nenhum participante disponível.";
+          return;
+        }
+
+        participantes.forEach(nome => {
+          const opt = document.createElement("option");
+          opt.value = nome;
+          opt.textContent = nome;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.error(e);
+        aviso.innerText = "Erro ao carregar participantes.";
+      }
+    })();
 
     select.addEventListener("change", () => {
       botao.disabled = !select.value;
@@ -97,7 +114,7 @@
 
     botao.addEventListener("click", async () => {
       botao.disabled = true;
-      const participante = select.value;
+      const eu = select.value;
 
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
@@ -105,20 +122,20 @@
         return;
       }
 
-      let nomes = snap.data().disponiveis.filter(n => n !== participante);
+      const disponiveis = snap.data().disponiveis.filter(n => n !== eu);
 
-      if (nomes.length === 0) {
+      if (disponiveis.length === 0) {
         aviso.innerText = "Não há nomes disponíveis para sorteio.";
         return;
       }
 
-      const indice = Math.floor(Math.random() * nomes.length);
-      const nomeSorteado = nomes[indice];
+      const indice = Math.floor(Math.random() * disponiveis.length);
+      const sorteado = disponiveis[indice];
 
-      const nomesAtualizados = snap.data().disponiveis.filter(n => n !== nomeSorteado);
-      await updateDoc(docRef, { disponiveis: nomesAtualizados });
+      const novosDisponiveis = snap.data().disponiveis.filter(n => n !== sorteado);
+      await updateDoc(docRef, { disponiveis: novosDisponiveis });
 
-      resultado.innerText = nomeSorteado;
+      resultado.innerText = sorteado;
       aviso.innerText = "Nome registrado com sucesso.";
     });
   </script>
