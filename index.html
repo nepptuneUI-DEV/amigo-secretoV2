@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amigo Secreto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #020617;
+      padding: 30px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    p {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #22c55e;
+      color: #022c22;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:disabled {
+      background: #4b5563;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #22c55e;
+    }
+    .warning {
+      margin-top: 15px;
+      font-size: 13px;
+      color: #fbbf24;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🎄 Amigo Secreto</h1>
+    <p>Clique no botão para sortear seu amigo secreto.<br>⚠️ Só clique uma vez.</p>
+
+    <button id="sortearBtn">Sortear nome</button>
+
+    <div class="result" id="resultado"></div>
+    <div class="warning" id="aviso"></div>
+  </div>
+
+  <script>
+    const nomesIniciais = [
+      "Victor",
+      "Gabriel",
+      "Evilyn",
+      "Eduarda",
+      "Ellen",
+      "Vanderlei",
+      "Matheus",
+      "Natalia"
+    ];
+
+    const STORAGE_KEY = "amigo_secreto_nomes";
+    const USED_KEY = "amigo_secreto_usados";
+
+    let nomesDisponiveis = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    let nomesUsados = JSON.parse(localStorage.getItem(USED_KEY));
+
+    if (!nomesDisponiveis || !nomesUsados) {
+      nomesDisponiveis = [...nomesIniciais];
+      nomesUsados = [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nomesDisponiveis));
+      localStorage.setItem(USED_KEY, JSON.stringify(nomesUsados));
+    }
+
+    const botao = document.getElementById("sortearBtn");
+    const resultado = document.getElementById("resultado");
+    const aviso = document.getElementById("aviso");
+
+    if (nomesDisponiveis.length === 0) {
+      botao.disabled = true;
+      aviso.innerText = "Todos os nomes já foram sorteados.";
+    }
+
+    botao.addEventListener("click", () => {
+      if (nomesDisponiveis.length === 0) return;
+
+      const indice = Math.floor(Math.random() * nomesDisponiveis.length);
+      const nomeSorteado = nomesDisponiveis[indice];
+
+      nomesDisponiveis.splice(indice, 1);
+      nomesUsados.push(nomeSorteado);
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nomesDisponiveis));
+      localStorage.setItem(USED_KEY, JSON.stringify(nomesUsados));
+
+      resultado.innerText = nomeSorteado;
+      botao.disabled = true;
+      aviso.innerText = "Nome já registrado. Não atualize a página.";
+    });
+  </script>
+</body>
+</html>
